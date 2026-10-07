@@ -1,100 +1,12 @@
-.site-header {
-    padding: 0 24px;
+.home {
+    padding: var(--page-margin);
 }
-.site-header h1 {
+
+.frame {
     display: inline-block;
-    margin-top: 0px;
-}
-
-#arrow-right {
-    fill: #81B449;
-    opacity: 1;
-    display: inline-block;
-    margin-bottom: 2px;
-    margin-right: -4px;
-    margin-left: -27px;
-}
-
-
-.container {
-    padding: 40px 8px;
-    max-width: 610px;
-    margin: 0 auto;
-}
-
-.content {
-    max-width: 600px;
-    padding: 0 24px;
-}
-
-
-.titles {
-    margin-bottom: 60px;
-    padding: 0 24px;
-}
-
-.square {
-    width: 9px;
-    height: 9px;
-    background: var(--brand-color);
-}
-
-.beginning .square {
-    position: absolute;
-    margin-left: -20px;
-    margin-top: -6px;
-}
-
-h1 {
-    font-size: clamp(1rem, 9vw, 3rem);
-}
-
-h3 {
-    font-weight: 500;
-    font-size: 28px;
-}
-
-p {
-    line-height: 26px;
-    font-size: 18px;
-}
-
-.ending p {
-    margin-bottom: 0;
-}
-
-.container > .square {
-    margin-left: 135px;
-}
-
-@media only screen and (min-width: 345px) {
-    .container > .square {
-        margin-left: 135px;
-    }
-}
-
-@media only screen and (min-width: 382px) {
-    .container > .square {
-        margin-left: 349px;
-    }
-}
-
-@media only screen and (min-width: 561px) {
-    .container > .square {
-        margin-left: 352px;
-    }
-}
-
-@media only screen and (min-width: 768px) {
-    #arrow-right {
-        margin-bottom: 6px;
-    }
-
-    h1 {
-        font-size: 55px;
-    }
-
-    h3 {
-        font-size: 35px;
-    }
+    width: 1em;
+    height: 1em;
+    margin-right: 0.4em;
+    vertical-align: -0.15em;
+    image-rendering: pixelated;
 }
