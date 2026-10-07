@@ -10,3 +10,9 @@
     vertical-align: -0.15em;
     image-rendering: pixelated;
 }
+
+.frame img {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
