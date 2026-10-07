@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "jacksonclawson-com",
+  "main": "cloudflare/worker.js",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./_site",
+    "binding": "ASSETS",
+    // The Worker sees every request so it can redirect the old domains.
+    "run_worker_first": true
+  },
+  "workers_dev": true,
+  "preview_urls": false
+}
