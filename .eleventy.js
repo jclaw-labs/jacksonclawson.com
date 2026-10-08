@@ -18,6 +18,7 @@ export default function (eleventyConfig) {
   });
 
   eleventyConfig.addPassthroughCopy('img');
+  eleventyConfig.addPassthroughCopy('js/night-train.js');
   eleventyConfig.addPassthroughCopy({ "public": "/" });
   eleventyConfig.addWatchTarget('css/');
   eleventyConfig.addWatchTarget('js/');
