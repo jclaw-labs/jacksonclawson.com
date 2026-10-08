@@ -37,10 +37,14 @@ export default function (eleventyConfig) {
         outputDir: outputDir
       });
 
+      // An image narrower than the smallest width yields one srcset candidate
+      // with no `w` descriptor, and HTML forbids `sizes` on such a srcset.
+      const hasMultipleCandidates = Object.values(metadata).some((candidates) => candidates.length > 1);
+
       const imageAttributes = {
         class: klass,
         alt,
-        sizes,
+        sizes: hasMultipleCandidates ? sizes : undefined,
         loading: 'lazy',
         decoding: 'async'
       };
