@@ -32,19 +32,24 @@ export default function (eleventyConfig) {
   });
 
   eleventyConfig.addCollection('projectsByPriority', (collection) => {
+    // Projects live in their own folders; `projects/*/` skips the
+    // /projects/ index page (projects/projects.liquid) itself.
     let projects = [];
-    projects.push(...collection.getFilteredByGlob('projects/**/*.liquid'));
-    projects.push(...collection.getFilteredByGlob('projects/**/*.md'));
+    projects.push(...collection.getFilteredByGlob('projects/*/**/*.liquid'));
+    projects.push(...collection.getFilteredByGlob('projects/*/**/*.md'));
 
+    // Highest priority first. Ties break on title, then URL, so the order
+    // never falls back to file dates, which change between checkouts.
     const result = projects.map((project) => {
       let split = project.inputPath.split('/')
       let projectFolder = split[2]
       project.imgPath = `./projects/${projectFolder}`
       return project
     }).sort((a, b) => {
-      if (a.data.priority > b.data.priority) return -1
-      else if (a.data.priority < b.data.priority) return 1
-      else return 0
+      const byPriority = (b.data.priority ?? 0) - (a.data.priority ?? 0)
+      if (byPriority !== 0) return byPriority
+      return String(a.data.title ?? '').localeCompare(String(b.data.title ?? '')) ||
+        a.url.localeCompare(b.url)
     })
     return result
   });
