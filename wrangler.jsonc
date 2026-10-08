@@ -9,6 +9,6 @@
     // The Worker sees every request so it can redirect the old domains.
     "run_worker_first": true
   },
-  "workers_dev": true,
+  "workers_dev": false,
   "preview_urls": true
 }
