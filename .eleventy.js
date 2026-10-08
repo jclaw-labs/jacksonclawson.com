@@ -17,6 +17,10 @@ export default function (eleventyConfig) {
     }
   });
 
+  // Agent toolkit vendored from local-config: tooling, not pages.
+  eleventyConfig.ignores.add('AGENTS.md');
+  eleventyConfig.ignores.add('.claude/**');
+
   eleventyConfig.addPassthroughCopy('img');
   eleventyConfig.addPassthroughCopy('js/night-train.js');
   eleventyConfig.addPassthroughCopy({ "public": "/" });
