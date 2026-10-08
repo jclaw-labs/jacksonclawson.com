@@ -137,42 +137,96 @@ function renderCells (ctx, frame, scratch) {
   return out
 }
 
-const FRAME_MS = 1000 / 60
+// Draws frame `frame` with smooth edges, the way the p5 sketch looks when it
+// is zoomed in on the genuary page.
+export function drawSmooth (ctx, frame) {
+  const scale = ctx.canvas.width / SIZE
+  ctx.setTransform(scale, 0, 0, scale, 0, 0)
+  ctx.fillStyle = COLORS.sky
+  ctx.fillRect(0, 0, SIZE, SIZE)
+  for (const s of sceneAt(frame)) {
+    ctx.fillStyle = s.color
+    ctx.beginPath()
+    if (s.type === 'rect') {
+      ctx.roundRect(s.x, s.y, s.w, s.h, s.r)
+    } else {
+      ctx.arc(s.x + s.d / 2, s.y + s.d / 2, s.d / 2, 0, Math.PI * 2)
+    }
+    ctx.fill()
+  }
+  ctx.setTransform(1, 0, 0, 1, 0, 0)
+}
 
-// <night-train frame="330"> plays the sketch from that frame. Anything inside
-// the element (like a still <img>) shows until the canvas takes over, and stays
-// for visitors who prefer reduced motion.
+const FRAME_MS = 1000 / 60
+const ZOOM = 5
+
+// <night-train frame="330" zoom> plays the sketch from that frame. Anything
+// inside the element (like a still <img>) shows until the canvas takes over,
+// and stays for visitors who prefer reduced motion.
+//
+// With `zoom`, it grows to 5x like the sketches on the genuary page: while the
+// mouse is over it, or after a click or tap until the next click or tap
+// elsewhere (pointerdown, since iOS sends no click for taps on plain text).
+// Zoomed in, it draws the scene smoothly at full resolution.
 export class NightTrain extends HTMLElement {
   connectedCallback () {
+    if (this.hasAttribute('zoom')) this.setUpZoom()
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
     const canvas = document.createElement('canvas')
-    canvas.width = canvas.height = SIZE
-    canvas.style.cssText = 'display:block;width:100%;height:100%;image-rendering:pixelated'
+    canvas.style.cssText = 'display:block;width:100%;height:100%'
     canvas.setAttribute('aria-hidden', 'true')
     const scratch = document.createElement('canvas')
     scratch.width = scratch.height = SIZE * SUPERSAMPLE
     const ctx = canvas.getContext('2d')
 
+    const draw = (frame) => {
+      const large = this.classList.contains('large')
+      const width = large ? Math.round(SIZE * ZOOM * window.devicePixelRatio) : SIZE
+      if (canvas.width !== width) {
+        canvas.width = canvas.height = width
+        canvas.style.imageRendering = large ? 'auto' : 'pixelated'
+      }
+      if (large) drawSmooth(ctx, frame)
+      else drawFrame(ctx, frame, scratch)
+    }
+
     const first = Number(this.getAttribute('frame')) || 1
     let begin
-    let last
     const tick = (now) => {
       begin ??= now
-      const frame = first + Math.floor((now - begin) / FRAME_MS)
-      if (frame !== last) {
-        drawFrame(ctx, frame, scratch)
-        last = frame
-      }
+      draw(first + Math.floor((now - begin) / FRAME_MS))
       this.raf = requestAnimationFrame(tick)
     }
-    drawFrame(ctx, first, scratch)
+    draw(first)
     this.replaceChildren(canvas)
     this.raf = requestAnimationFrame(tick)
   }
 
+  setUpZoom () {
+    const isTouch = (e) => e.pointerType === 'touch'
+    this.onpointerenter = (e) => { if (!isTouch(e)) this.grow() }
+    this.onpointerleave = (e) => { if (!isTouch(e)) this.shrink() }
+    this.onclick = () => this.grow({ clicked: true })
+    this.onOutsideClick = (e) => {
+      if (!this.contains(e.target)) this.shrink({ force: true })
+    }
+    document.addEventListener('pointerdown', this.onOutsideClick)
+  }
+
+  grow ({ clicked } = {}) {
+    if (clicked) this.classList.add('clicked')
+    this.classList.add('large')
+  }
+
+  shrink ({ force } = {}) {
+    if (!force && this.classList.contains('clicked')) return
+    this.classList.remove('large', 'clicked')
+  }
+
   disconnectedCallback () {
     cancelAnimationFrame(this.raf)
+    if (this.onOutsideClick) document.removeEventListener('pointerdown', this.onOutsideClick)
   }
 }
 
