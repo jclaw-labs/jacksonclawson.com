@@ -11,6 +11,11 @@
     image-rendering: pixelated;
 }
 
+.frame.large {
+    width: 5rem;
+    height: 5rem;
+}
+
 .frame img {
     display: block;
     width: 100%;
