@@ -158,7 +158,6 @@ export function drawSmooth (ctx, frame) {
 }
 
 const FRAME_MS = 1000 / 60
-const ZOOM = 5
 
 // <night-train frame="330" zoom> plays the sketch from that frame. Anything
 // inside the element (like a still <img>) shows until the canvas takes over,
@@ -182,7 +181,7 @@ export class NightTrain extends HTMLElement {
 
     const draw = (frame) => {
       const large = this.classList.contains('large')
-      const width = large ? Math.round(SIZE * ZOOM * window.devicePixelRatio) : SIZE
+      const width = large ? Math.round(this.getBoundingClientRect().width * window.devicePixelRatio) : SIZE
       if (canvas.width !== width) {
         canvas.width = canvas.height = width
         canvas.style.imageRendering = large ? 'auto' : 'pixelated'
