@@ -37,10 +37,13 @@ export default function (eleventyConfig) {
         outputDir: outputDir
       });
 
+      // eleventy-img 7 keeps `sizes` on a <source> with a single srcset candidate (no `w` descriptor), which HTML forbids.
+      const hasMultipleCandidates = Object.values(metadata).some((candidates) => candidates.length > 1);
+
       const imageAttributes = {
         class: klass,
         alt,
-        sizes,
+        sizes: hasMultipleCandidates ? sizes : undefined,
         loading: 'lazy',
         decoding: 'async'
       };
