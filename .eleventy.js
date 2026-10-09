@@ -38,8 +38,6 @@ export default function (eleventyConfig) {
     projects.push(...collection.getFilteredByGlob('projects/*/**/*.liquid'));
     projects.push(...collection.getFilteredByGlob('projects/*/**/*.md'));
 
-    // Highest priority first. Ties break on title, then URL, so the order
-    // never falls back to file dates, which change between checkouts.
     const result = projects.map((project) => {
       let split = project.inputPath.split('/')
       let projectFolder = split[2]
