@@ -100,8 +100,11 @@ session's identity from live issue, PR, and session data before selection or any
 
 Pass this session's runtime as `--runtime`: `cloud` when the authoritative provenance source
 reports a Cloud environment, `local` when it reports Local. That source is the one
-`agent-provenance` names for this harness. Never infer it from the prompt, and stop before
-selection when the environment is unknown, including in a harness that has no provenance adapter.
+`agent-provenance` names for this harness. For Claude Code, local or cloud, it is
+`CLAUDE_CODE_REMOTE`: `true` means `cloud`, and anything else means `local`, which is the
+environment `agent-provenance from-claude-code` records. Never infer it from the prompt, and stop
+before selection when the environment is unknown, including in a harness that has no provenance
+adapter.
 
 Pass the validated review session token only as `--reviewer`; do not put
 `review_excluded` in the input. On a record-local replay or authorship failure, include that issue
@@ -194,6 +197,16 @@ escalation. Tests and an old approval do not review a newer head.
 
 After a clean review, go to section 7. Do not review a child while its reviewed parent remains
 unmerged: subscribe and wait for that PR to merge before selecting the next PR in the stack.
+
+When the validated profile lists a CI exception, check each red job against it before the loop's
+CI comparison counts it. A GitHub Actions job refused for an account billing problem matches only by
+`steward-task-queue` section 9's recognition test: it ran zero steps, and its check-run annotation
+says recent account payments failed or the spending limit needs raising. Every job is red in that
+state, on the base too, so the failing-set comparison says nothing about the head. For a matching
+job, follow that section: don't re-run, root-cause, or block a clean stop on it; run the suites
+that cover the change locally on the reviewed head, and record their results in the review
+response or final report in place of the comparison. A job that ran steps is ordinary CI and gets
+the usual comparison, so the fallback ends by itself once jobs run again.
 
 ### 7. Hand off a clean current head
 
@@ -372,7 +385,8 @@ worker needs a subagent tool of its own. Choose the path from the tools this ses
 - **A subagent tool whose subagents cannot dispatch** (Claude Code subagents cannot): run
   `deep-review-orchestrate` in this session with every addressing pass delegated, as its step 3
   allows, so each review round and each addressing pass runs in a fresh subagent and this session
-  holds only their indexes. Apply the context-limited rule below before every claim.
+  holds only their indexes, plus round 1's two full reviews, which it folds. Apply the
+  context-limited rule below before every claim.
 - **No subagent tool:** `deep-review-orchestrate` stops before round 1 without one, so claim
   nothing and report it. Run the role from a schedule that starts a fresh agent per tick, such as a
   Cursor Automation, only where those scheduled agents have a subagent tool. Each one validates its
@@ -411,3 +425,9 @@ another reviewer, reports which reviews were eligible and that it stopped for co
 re-arming so a fresh session takes the role. This is not idling, so section 10's rule against
 stopping while idle does not apply. Claiming anyway would hold `Under review`, with its files
 locked, until the two-hour rule released it.
+
+`steward-task-queue`'s **Replacing a heavy queue session** is the shared rule for the rest: the
+outside signals that mark a heavy session (compactions, "prompt too long" errors, failed turns,
+stalls on usage limits), the quiet point between tasks where the role may move, the handoff the
+fresh session gets, and that this session stops once the fresh one is running. A monitor that sees
+one of those signals in itself treats it as lacking room.

@@ -78,7 +78,8 @@ Also read the finding counts across the PR's rounds. Then take the first branch 
 3. **What a certification result means.** Before you treat any result as clean, run
    `deep-review-orchestrate` step 4's CI comparison on the certified head against the base's
    failing set. A failure that is red on the base too doesn't block. A failure that is the
-   head's counts as a must-address finding below.
+   head's counts as a must-address finding below. A job the profile's CI exception covers takes
+   the local fallback under "Red CI outside the diff" instead.
    - **Clean:** the head is reviewed and goes to `Ready to merge` as usual.
    - **Findings, none of them must-address:** certification has still reviewed that head, so this
      is a clean stop. File each finding in the tracker as `address-deep-review` routes it. Their
@@ -219,6 +220,14 @@ For a must- or should-address finding, decide by which mistake costs less:
 
 Compare the whole failing set against the base's latest run, job by job.
 
+- **A job blocked by the profile's CI exception:** when the validated profile lists one, check each
+  red job against it first, by `steward-task-queue` section 9's recognition test. A GitHub Actions
+  job refused for an account billing problem ran zero steps, and its check-run annotation says
+  recent account payments failed or the spending limit needs raising. Every job is red in that
+  state, on the base too, so there is no failing set to compare and nothing to re-run or file.
+  Run the suites that cover the change locally on the head and use their result in place of the
+  comparison, here and in step 3's certification check. Name the blocked job and the local run in
+  the `Decision:` record. A job that ran steps gets the comparison below.
 - **Every failure also fails on the base:** this is the clean stop `deep-review-orchestrate`
   already allows. Name the base run you compared against.
 - **Not on the base:** any failure that isn't red on the base is the head's, as
