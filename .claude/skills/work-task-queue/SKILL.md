@@ -102,6 +102,14 @@ Implement only the claimed issue under repository instructions. Keep `Touches` e
 change evolves, and update profile-required issue labels through the profile adapter. Verify the
 behavior and required repository checks before describing the work as reviewable.
 
+When the validated profile lists a CI exception, check each red job against it before treating the
+red as the change's. A GitHub Actions job refused for an account billing problem matches only by
+`steward-task-queue` section 9's recognition test: it ran zero steps, and its check-run annotation
+says recent account payments failed or the spending limit needs raising. For a matching job,
+follow that section: don't re-run, root-cause, or wait on it; run the suites that cover the change
+locally and record their results in the PR body where the CI result would go. A job that ran steps
+is ordinary CI, so the fallback ends by itself once jobs run again.
+
 Do not change role merely because review work exists. This session remains a worker and never
 uses worker ownership as permission to review its own result.
 
@@ -242,11 +250,11 @@ worktree show.
   that is only in that worktree ends with this session and nobody else can fetch it, so first run
   the brief's `claim-replay` command, and while the Claim still names this session, commit any
   diff and push the worktree's branch; when it names anyone else, stop writing as `claim-task`
-  requires of the holder. The monitor's own activity keeps that Claim fresh under the two-hour
-  rule, so nothing releases it by itself: post section 10's incomplete-handoff record as a comment
-  on the owner issue that starts `Needs a person:` and names the pushed branch, its head, what
-  remains, and why each worker stopped. Name the issue in every section 9 report until a person
-  decides.
+  requires of the holder. Only a person's answer can release that Claim, and `steward-task-queue`
+  section 7 exempts it from the two-hour release once the issue says so: post section 10's
+  incomplete-handoff record as a comment on the owner issue that starts `Needs a person:` and
+  names the pushed branch, its head, what remains, and why each worker stopped. Name the issue in
+  every section 9 report until a person decides.
 - **With none**, nothing holds the files, so release the task the way `claim-task`'s
   **Reclaiming a dead task** does without implementation evidence: clear the scoped Claim, then
   append and activate a fresh `Ready` generation through the two-phase transition. Comment on the
@@ -263,3 +271,9 @@ worker, reports which issues were eligible and that it stopped for context, and 
 a fresh session takes the role. This is not idling, so section 9's rule against stopping while
 idle does not apply. Claiming anyway would hold the issue's files `In progress` with nobody working
 until the two-hour rule releases them.
+
+`steward-task-queue`'s **Replacing a heavy queue session** is the shared rule for the rest: the
+outside signals that mark a heavy session (compactions, "prompt too long" errors, failed turns,
+stalls on usage limits), the quiet point between tasks where the role may move, the handoff the
+fresh session gets, and that this session stops once the fresh one is running. A monitor that sees
+one of those signals in itself treats it as lacking room.

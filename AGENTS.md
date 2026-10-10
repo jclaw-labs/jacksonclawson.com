@@ -18,7 +18,13 @@ Don't keep probing, and don't report the work as blocked. A subagent runs in its
 
 ## Subagents have these rules too
 
-A hook prepends this file to every `Task` prompt, so a subagent starts with all of it. Don't paste chunks into a subagent's prompt, and if one reports it has no Buildkite or Datadog access, check `~/.cursor/hooks/inject-global-agents-md.sh` rather than rewording anything here.
+Each runtime has its own route to this file:
+
+- **Claude Code, on every machine `setup.zsh` has run on**, reads it natively. `links.conf` links `~/.claude/CLAUDE.md` to this file with no variant tag, and Claude Code loads that into every session and every subagent it starts, apart from built-in read-only agents such as Explore and Plan, which skip it. On the Substack Mac, `claude/cursor-adapter.py` skips the injection hook below, so Claude Code never gets a second copy.
+- **Cursor, on the Substack Mac only**, gets it from `~/.cursor/hooks/inject-global-agents-md.sh`, which adds it at session start and prepends it to every new `Task` prompt. `links.conf` links `~/.cursor/hooks.json` and `~/.cursor/hooks` for the `substack` variant alone. If a subagent there reports it has no Buildkite or Datadog access, check that hook rather than rewording anything here.
+- **Cursor on the personal, pi5 and pop machines, and any agent on a cloud VM,** get no home copy. The hook is not linked on those machines, on purpose, and `setup.zsh` never runs on a cloud VM. They have these rules only where the repo carries a copy, such as the root `AGENTS.md` that `sync-project` writes into my projects.
+
+So don't paste chunks of this file into a subagent's prompt: where the runtime delivers it, a pasted copy loads it twice. The one handoff that needs a paste is a cloud agent launched from a machine without the hook, and the `local-or-cloud` skill covers it.
 
 ## After a wait, re-check before acting or reporting
 
@@ -108,6 +114,10 @@ Work targeted at `either` needs a check in cloud or local. Work targeted at
 `both` stays draft or not ready until both paths have been checked. A reviewer
 running in an incompatible environment hands the review to a compatible
 reviewer instead of approving an unchecked path.
+
+## New work: decide local or cloud first
+
+When I hand you a new piece of work that will end in a commit, read the `local-or-cloud` skill before you claim a worktree or touch a file, and follow its decision: do it here, or hand it to a Cursor cloud agent. When it picks cloud, treat that as my explicit request for a cloud agent. Skip it for read-only questions, for follow-ups on work already underway in this session, when you're a cloud agent or a subagent yourself, when the skill isn't installed where you're running, and in the other cases the skill lists. When I ask for a cloud agent, still read the skill, because it lists what to check before launching and what the prompt must carry. A cloud agent or subagent skips because the decision was already made upstream of it.
 
 ## Always commit, push, and open a PR
 
@@ -275,7 +285,7 @@ If `rg` output ever looks mangled or comes back unexpectedly empty, suspect your
 
 Agent shells run zsh. Where it hasn't loaded this repo's zshrc (cloud sessions, other machines), zsh's defaults apply: an unmatched glob aborts the whole command, and a word starting with `=` expands to a command's path or fails. So quote globs that might not match (or pass them to `rg -g`), and quote any word starting with `=`. My machines set `NO_NOMATCH` and `NO_EQUALS` in agent shells, but you can't always tell which shell you're in.
 
-Two zsh habits no option turns off: brace a variable that a colon follows (`git show "${SHA}:path"`), because `$SHA:a…` reads `:a` as a modifier; and give a helper a name that isn't an alias (anything longer than a letter or two). `name() { … }` fails when `name` is an alias, and `function name { … }` defines it but the alias still runs when you call `name`.
+Three zsh habits no option turns off. Brace a variable that a colon follows (`git show "${SHA}:path"`), because `$SHA:a…` reads `:a` as a modifier. Give a helper a name that isn't an alias (anything longer than a letter or two): `name() { … }` fails when `name` is an alias, and `function name { … }` defines it but the alias still runs when you call `name`. And don't read `$PIPESTATUS`: it's bash, and in zsh it expands to nothing, so `cmd | grep …; echo "exit=${PIPESTATUS[0]}"` prints `exit=` and proves nothing, and under `set -u` zsh stops with `PIPESTATUS[0]: parameter not set` instead. zsh's own is `${pipestatus[1]}`, lowercase and 1-indexed; simpler is to capture first, `out="$(cmd 2>&1)"; rc=$?`, and grep `$out` afterwards.
 
 ## Buildkite: use the `bk` CLI
 
@@ -540,12 +550,12 @@ As defense-in-depth for _every_ dev-env path (not just bare mocha — also `knex
 Each worktree gets its **own test databases**, so `stest` no longer shares one `monograph_test` with every other worktree and with my own checkout. The `stest` wrapper derives the worktree's slot from the path (under the worktree home, or nothing at all), exports `DATABASE_URL_TEST`/`GENERATED_DATABASE_URL_TEST` for `monograph_test_wtN`, and runs `agent-db.sh ensure-test` first, which copies a master-pinned template and rebuilds the pair if it has drifted ahead of the branch. Five consequences worth knowing:
 
 - **A refusal from `ensure-test` is information, not an obstacle** — read the message, because it says which refusal it is. The two you'll actually hit: "template is not ready" means nobody has built it yet, so run `agent-db.sh test-template` from the master checkout; "still ahead" means the branch is older than the template, so rebase — re-running won't help, and copying can't fix it. On an active stack, where a rebase would force-push every child, use a throwaway pair instead (below). It also refuses if you're outside the worktree home, if its isolation check fails, or if it gives up waiting for the lock, and those read differently.
-- **A throwaway pair runs a stale branch without rebasing.** Create two empty databases, pin both test URLs on the `stest` call, and drop them when you're done. `stest` skips `ensure-test` when you set both URLs yourself, the injection hook leaves a pair you set alone, and the suite migrates the empty databases from scratch. Pin both or neither: `stest` refuses one alone, because the other would land on the shared database. Keep `monograph` out of the names, so they can't be mistaken for the databases this section protects:
+- **A throwaway pair runs a stale branch without rebasing.** Create two empty databases, pin both test URLs on the `stest` call, and drop them when you're done. `stest` skips `ensure-test` when you set both URLs yourself, the injection hook leaves a pair you set alone, and the suite migrates the empty databases from scratch. Pin both or neither: `stest` refuses one alone, because the other would land on the shared database. Keep `monograph` out of the names, so they can't be mistaken for the databases this section protects. Each name also needs `test` as its own `_`-separated part, because the test bootstrap refuses any database without one. That's why the names below end in `_test`, and why a name like `stest_scratch_mybranch` fails, since its `test` is buried inside `stest`:
 
   ```bash
-  cd "$SLOT/apps/substack" && createdb stest_scratch_mybranch && createdb stest_scratch_generated_mybranch
-  cd "$SLOT/apps/substack" && DATABASE_URL_TEST=postgresql:///stest_scratch_mybranch GENERATED_DATABASE_URL_TEST=postgresql:///stest_scratch_generated_mybranch stest test/api/test_example.ts
-  dropdb stest_scratch_mybranch && dropdb stest_scratch_generated_mybranch
+  cd "$SLOT/apps/substack" && createdb mybranch_scratch_test && createdb mybranch_scratch_generated_test
+  cd "$SLOT/apps/substack" && DATABASE_URL_TEST=postgresql:///mybranch_scratch_test GENERATED_DATABASE_URL_TEST=postgresql:///mybranch_scratch_generated_test stest test/api/test_example.ts
+  dropdb mybranch_scratch_test && dropdb mybranch_scratch_generated_test
   ```
 - **Run tests from inside a worktree.** From my own `~/src/substack` checkout the wrapper deliberately sets nothing and the canonical `monograph_test` is used, exactly as before.
 - **A `stest` that seems to hang is probably queueing, not stuck.** `ensure-test` holds one machine-wide lock for its whole run, so two slots testing at once go one after the other, and a slot that arrives while the template is being built waits for that build. Give it a few minutes before assuming something is wrong. A shell that can't write `~/.substack-agent` (a sandboxed Cursor shell) makes `stest` refuse up front instead; rerun with `required_permissions: ["all"]`, and in Cursor request that up front, including for compound commands that only end in `stest`. A hang without that refusal is a real queue.
